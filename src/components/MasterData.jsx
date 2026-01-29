@@ -1,13 +1,25 @@
 import { useState } from 'react';
-import { Plus, Save, Trash2, XCircle, Clock } from 'lucide-react';
+import { Plus, Save, Trash2, XCircle, Clock, Loader2 } from 'lucide-react';
 import { Card } from './ui';
 
 /**
  * MasterData component - Settings for managing activities and categories
  */
-export const MasterData = ({ categories, setCategories, activities, setActivities }) => {
-    const [view, setView] = useState('activities'); // 'activities' | 'categories'
+export const MasterData = ({
+    categories,
+    setCategories,
+    activities,
+    setActivities,
+    onAddCategory,
+    onUpdateCategory,
+    onDeleteCategory,
+    onAddActivity,
+    onUpdateActivity,
+    onDeleteActivity,
+}) => {
+    const [view, setView] = useState('activities');
     const [editingItem, setEditingItem] = useState(null);
+    const [saving, setSaving] = useState(false);
     const [newItem, setNewItem] = useState({
         name: '',
         categoryId: '',
@@ -26,50 +38,55 @@ export const MasterData = ({ categories, setCategories, activities, setActivitie
         }
     };
 
-    const handleSave = () => {
-        if (view === 'activities') {
-            if (!newItem.name || !newItem.categoryId) return;
-            if (newItem.type === 'time-bound' && !newItem.time) return;
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            if (view === 'activities') {
+                if (!newItem.name || !newItem.categoryId) {
+                    setSaving(false);
+                    return;
+                }
+                if (newItem.type === 'time-bound' && !newItem.time) {
+                    setSaving(false);
+                    return;
+                }
 
-            if (editingItem) {
-                setActivities((prev) =>
-                    prev.map((a) =>
-                        a.id === editingItem
-                            ? { ...a, ...newItem, time: newItem.type === 'time-bound' ? newItem.time : '' }
-                            : a
-                    )
-                );
-            } else {
-                const newId = `act-${Date.now()}`;
-                setActivities([
-                    ...activities,
-                    {
-                        id: newId,
-                        name: newItem.name,
-                        categoryId: newItem.categoryId,
-                        type: newItem.type,
-                        time: newItem.type === 'time-bound' ? newItem.time : '',
-                    },
-                ]);
-            }
-            setNewItem({ name: '', categoryId: '', type: 'free', time: '' });
-        } else {
-            if (!newItem.name) return;
+                const data = {
+                    name: newItem.name,
+                    categoryId: parseInt(newItem.categoryId),
+                    type: newItem.type,
+                    time: newItem.type === 'time-bound' ? newItem.time : '',
+                };
 
-            if (editingItem) {
-                setCategories((prev) => prev.map((c) => (c.id === editingItem ? { ...c, ...newItem } : c)));
+                if (editingItem) {
+                    await onUpdateActivity(editingItem, data);
+                } else {
+                    await onAddActivity(data);
+                }
+                setNewItem({ name: '', categoryId: '', type: 'free', time: '' });
             } else {
-                const newId = `cat-${Date.now()}`;
-                setCategories([...categories, { id: newId, name: newItem.name, color: newItem.color || '#6366f1' }]);
+                if (!newItem.name) {
+                    setSaving(false);
+                    return;
+                }
+
+                if (editingItem) {
+                    await onUpdateCategory(editingItem, { name: newItem.name, color: newItem.color });
+                } else {
+                    await onAddCategory(newItem.name, newItem.color || '#6366f1');
+                }
+                setNewItem({ name: '', color: '#6366f1' });
             }
-            setNewItem({ name: '', color: '#6366f1' });
+            setEditingItem(null);
+        } catch (err) {
+            alert('Failed to save: ' + err.message);
         }
-        setEditingItem(null);
+        setSaving(false);
     };
 
     const handleEditStart = (item) => {
         setEditingItem(item.id);
-        setNewItem({ ...item });
+        setNewItem({ ...item, categoryId: item.categoryId?.toString() || '' });
     };
 
     const handleCancelEdit = () => {
@@ -81,17 +98,26 @@ export const MasterData = ({ categories, setCategories, activities, setActivitie
         }
     };
 
-    const handleDeleteActivity = (e, id) => {
+    const handleDeleteActivity = async (e, id) => {
         e.stopPropagation();
-        setActivities(activities.filter((a) => a.id !== id));
-        if (editingItem === id) handleCancelEdit();
+        if (!confirm('Delete this activity?')) return;
+        try {
+            await onDeleteActivity(id);
+            if (editingItem === id) handleCancelEdit();
+        } catch (err) {
+            alert('Failed to delete: ' + err.message);
+        }
     };
 
-    const handleDeleteCategory = (e, id) => {
+    const handleDeleteCategory = async (e, id) => {
         e.stopPropagation();
-        setCategories(categories.filter((c) => c.id !== id));
-        setActivities(activities.filter((a) => a.categoryId !== id));
-        if (editingItem === id) handleCancelEdit();
+        if (!confirm('Delete this category and all its activities?')) return;
+        try {
+            await onDeleteCategory(id);
+            if (editingItem === id) handleCancelEdit();
+        } catch (err) {
+            alert('Failed to delete: ' + err.message);
+        }
     };
 
     return (
@@ -212,10 +238,17 @@ export const MasterData = ({ categories, setCategories, activities, setActivitie
 
                     <button
                         onClick={handleSave}
-                        className={`px-4 py-2 text-white rounded-md font-medium flex items-center gap-2 h-[42px] min-w-[100px] justify-center transition-colors ${editingItem ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                        disabled={saving}
+                        className={`px-4 py-2 text-white rounded-md font-medium flex items-center gap-2 h-[42px] min-w-[100px] justify-center transition-colors disabled:opacity-50 ${editingItem ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'
                             }`}
                     >
-                        {editingItem ? <Save size={18} /> : <Plus size={18} />}
+                        {saving ? (
+                            <Loader2 size={18} className="animate-spin" />
+                        ) : editingItem ? (
+                            <Save size={18} />
+                        ) : (
+                            <Plus size={18} />
+                        )}
                         {editingItem ? 'Update' : 'Add'}
                     </button>
                 </div>
@@ -225,44 +258,57 @@ export const MasterData = ({ categories, setCategories, activities, setActivitie
                     <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
                         {view === 'activities' ? 'Click row to edit activity' : 'Click row to edit category'}
                     </h4>
-                    {view === 'activities'
-                        ? activities.map((act) => (
-                            <div
-                                key={act.id}
-                                onClick={() => handleEditStart(act)}
-                                className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all ${editingItem === act.id
-                                        ? 'border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50'
-                                        : 'border-slate-100 hover:bg-slate-50 hover:border-slate-300'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div>
-                                        <p className="font-medium text-slate-800">{act.name}</p>
-                                        <p className="text-xs text-slate-500">
-                                            {categories.find((c) => c.id === act.categoryId)?.name}
-                                        </p>
+                    {view === 'activities' ? (
+                        activities.length === 0 ? (
+                            <p className="text-slate-500 text-sm italic py-4">
+                                No activities yet. Add your first activity above.
+                            </p>
+                        ) : (
+                            activities.map((act) => (
+                                <div
+                                    key={act.id}
+                                    onClick={() => handleEditStart(act)}
+                                    className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all ${editingItem === act.id
+                                            ? 'border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50'
+                                            : 'border-slate-100 hover:bg-slate-50 hover:border-slate-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div>
+                                            <p className="font-medium text-slate-800">{act.name}</p>
+                                            <p className="text-xs text-slate-500">
+                                                {categories.find((c) => c.id === act.categoryId)?.name || 'Unknown'}
+                                            </p>
+                                        </div>
+                                        {act.type === 'time-bound' && act.time && (
+                                            <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full flex items-center gap-1">
+                                                <Clock size={12} /> {act.time}
+                                            </span>
+                                        )}
+                                        {act.type === 'free' && (
+                                            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full">
+                                                Anytime
+                                            </span>
+                                        )}
                                     </div>
-                                    {act.type === 'time-bound' && (
-                                        <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full flex items-center gap-1">
-                                            <Clock size={12} /> {act.time}
-                                        </span>
-                                    )}
-                                    {act.type === 'free' && (
-                                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full">Anytime</span>
-                                    )}
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => handleDeleteActivity(e, act.id)}
+                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                            title="Delete Activity"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={(e) => handleDeleteActivity(e, act.id)}
-                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                                        title="Delete Activity"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                        : categories.map((cat) => (
+                            ))
+                        )
+                    ) : categories.length === 0 ? (
+                        <p className="text-slate-500 text-sm italic py-4">
+                            No categories yet. Add your first category above.
+                        </p>
+                    ) : (
+                        categories.map((cat) => (
                             <div
                                 key={cat.id}
                                 onClick={() => handleEditStart(cat)}
@@ -288,7 +334,8 @@ export const MasterData = ({ categories, setCategories, activities, setActivitie
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                        ))
+                    )}
                 </div>
             </Card>
         </div>

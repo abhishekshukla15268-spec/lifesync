@@ -1,9 +1,19 @@
-import { Activity, LayoutDashboard, PieChart, Settings } from 'lucide-react';
+import { Activity, LayoutDashboard, PieChart, Settings, LogOut } from 'lucide-react';
 
 /**
  * Sidebar navigation component
  */
-export const Sidebar = ({ activeTab, setActiveTab }) => {
+export const Sidebar = ({ activeTab, setActiveTab, user, onLogout }) => {
+    // Get user initials
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        const parts = name.split(' ');
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
     return (
         <>
             {/* Desktop Sidebar */}
@@ -43,14 +53,23 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                     </button>
                 </nav>
                 <div className="p-4 border-t border-slate-800">
-                    <div className="flex items-center gap-3 px-4 py-2">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
-                            JD
+                    <div className="flex items-center justify-between px-4 py-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
+                                {getInitials(user?.name)}
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                                <p className="text-xs text-slate-500 truncate max-w-[120px]">{user?.email}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-medium">John Doe</p>
-                            <p className="text-xs text-slate-500">Free Plan</p>
-                        </div>
+                        <button
+                            onClick={onLogout}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            title="Logout"
+                        >
+                            <LogOut size={18} />
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -60,7 +79,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                 <h1 className="font-bold flex items-center gap-2 text-indigo-400">
                     <Activity /> LifeSync
                 </h1>
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
                     <LayoutDashboard
                         onClick={() => setActiveTab('dashboard')}
                         className={`cursor-pointer ${activeTab === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'}`}
@@ -73,6 +92,13 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                         onClick={() => setActiveTab('master')}
                         className={`cursor-pointer ${activeTab === 'master' ? 'text-indigo-400' : 'text-slate-400'}`}
                     />
+                    <button
+                        onClick={onLogout}
+                        className="p-1 text-slate-400 hover:text-white"
+                        title="Logout"
+                    >
+                        <LogOut size={18} />
+                    </button>
                 </div>
             </div>
         </>

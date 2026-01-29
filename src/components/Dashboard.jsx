@@ -139,8 +139,8 @@ export const Dashboard = ({
                         <button
                             onClick={() => setGridMode('overview')}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${gridMode === 'overview'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-indigo-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Overview
@@ -151,8 +151,8 @@ export const Dashboard = ({
                                 setGridMode('edit');
                             }}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${gridMode === 'edit'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-indigo-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Log Today
@@ -181,7 +181,7 @@ export const Dashboard = ({
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {categories.map((cat) => {
-                                    const catActivities = activities.filter((a) => a.categoryId === cat.id);
+                                    const catActivities = activities.filter((a) => String(a.categoryId) === String(cat.id));
                                     if (catActivities.length === 0) return null;
 
                                     return (
@@ -249,7 +249,7 @@ export const Dashboard = ({
 
                         <div className="space-y-8">
                             {categories.map((cat) => {
-                                const catActivities = activities.filter((a) => a.categoryId === cat.id);
+                                const catActivities = activities.filter((a) => String(a.categoryId) === String(cat.id));
                                 if (catActivities.length === 0) return null;
 
                                 return (
@@ -268,15 +268,15 @@ export const Dashboard = ({
                                                         key={act.id}
                                                         onClick={() => toggleActivityTemp(act.id)}
                                                         className={`group cursor-pointer p-4 rounded-xl border flex items-center justify-between transition-all ${isSelected
-                                                                ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
-                                                                : 'border-slate-200 hover:border-slate-300 bg-white'
+                                                            ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
+                                                            : 'border-slate-200 hover:border-slate-300 bg-white'
                                                             }`}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div
                                                                 className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${isSelected
-                                                                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                                                                        : 'border-slate-300 bg-white group-hover:border-slate-400'
+                                                                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                                    : 'border-slate-300 bg-white group-hover:border-slate-400'
                                                                     }`}
                                                             >
                                                                 {isSelected && <CheckCircle2 size={14} />}

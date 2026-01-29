@@ -37,7 +37,7 @@ export const CategorySpecific = ({ categories, activities, logs }) => {
         const datesToAnalyze = getRangeDates(timeRange);
 
         return categories.map((cat) => {
-            const catActs = activities.filter((a) => a.categoryId === cat.id);
+            const catActs = activities.filter((a) => String(a.categoryId) === String(cat.id));
             let total = 0;
 
             const validDates = datesToAnalyze.filter((d) => d <= today);
@@ -69,7 +69,7 @@ export const CategorySpecific = ({ categories, activities, logs }) => {
     // Calculate detailed per-activity stats based on Analysis Range
     const catStats = useMemo(() => {
         return activities
-            .filter((act) => selectedCatId === 'all' || act.categoryId === selectedCatId)
+            .filter((act) => selectedCatId === 'all' || String(act.categoryId) === String(selectedCatId))
             .map((act) => {
                 let rate = 0;
                 let chartData = [];
@@ -97,7 +97,7 @@ export const CategorySpecific = ({ categories, activities, logs }) => {
                     chartData = months.map((m, i) => {
                         const data = monthlyData[i];
                         const percentage = data.count > 0 ? Math.round((data.total / data.count) * 100) : 0;
-                        const seed = act.id.charCodeAt(3) + i;
+                        const seed = (String(act.id).charCodeAt(0) || 0) + i;
                         return {
                             day: m,
                             You: percentage,
@@ -109,7 +109,7 @@ export const CategorySpecific = ({ categories, activities, logs }) => {
                     chartData = rangeDates.map((date) => {
                         const isFuture = date > today;
                         const isDone = logs[date]?.includes(act.id);
-                        const seed = date.charCodeAt(9) + act.id.charCodeAt(3);
+                        const seed = (date.charCodeAt(9) || 0) + (String(act.id).charCodeAt(0) || 0);
 
                         let dayLabel;
                         if (analysisRange === 'month') {
@@ -150,8 +150,8 @@ export const CategorySpecific = ({ categories, activities, logs }) => {
                                 key={range.id}
                                 onClick={() => setTimeRange(range.id)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all ${timeRange === range.id
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 {range.label}
@@ -212,8 +212,8 @@ export const CategorySpecific = ({ categories, activities, logs }) => {
                                 key={range.id}
                                 onClick={() => setAnalysisRange(range.id)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all ${analysisRange === range.id
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 {range.label}
