@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import path from 'path';
 
 // Import database (this initializes it)
 import './db.js';
@@ -33,14 +34,23 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api', dataRoutes);
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../dist')));
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 404 handler
-app.use((req, res) => {
+// API 404 handler
+app.use('/api/*', (req, res) => {
     res.status(404).json({ error: 'Not found' });
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Error handler

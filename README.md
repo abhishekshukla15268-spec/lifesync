@@ -140,6 +140,32 @@ npm run deploy
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 🐳 Docker Deployment
+
+You can run the entire application (frontend + backend + database) using Docker.
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Run with Docker Compose
+
+```bash
+# Build and start the container
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+```
+
+The application will be available at `http://localhost:3001`.
+
+Data is persisted in `server/lifesync.db`.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

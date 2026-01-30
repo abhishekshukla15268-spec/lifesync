@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  lifesync:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      # Persist the SQLite database
+      - ./server/lifesync.db:/app/server/lifesync.db
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    restart: unless-stopped
