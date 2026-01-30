@@ -112,7 +112,7 @@ router.delete('/categories/:id', (req, res) => {
 router.get('/activities', (req, res) => {
     try {
         const activities = db.prepare(
-            'SELECT id, category_id as categoryId, name, type, time FROM activities WHERE user_id = ? ORDER BY id'
+            'SELECT id, category_id as categoryId, name, type, time, hours FROM activities WHERE user_id = ? ORDER BY id'
         ).all(req.user.id);
 
         res.json({ activities });
@@ -128,7 +128,7 @@ router.get('/activities', (req, res) => {
  */
 router.post('/activities', (req, res) => {
     try {
-        const { name, categoryId, type, time } = req.body;
+        const { name, categoryId, type, time, hours } = req.body;
 
         if (!name || !categoryId) {
             return res.status(400).json({ error: 'Name and categoryId are required' });
@@ -144,8 +144,8 @@ router.post('/activities', (req, res) => {
         }
 
         const result = db.prepare(
-            'INSERT INTO activities (user_id, category_id, name, type, time) VALUES (?, ?, ?, ?, ?)'
-        ).run(req.user.id, categoryId, name, type || 'free', time || null);
+            'INSERT INTO activities (user_id, category_id, name, type, time, hours) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(req.user.id, categoryId, name, type || 'free', time || null, hours || 0);
 
         res.status(201).json({
             activity: {
@@ -153,7 +153,8 @@ router.post('/activities', (req, res) => {
                 name,
                 categoryId,
                 type: type || 'free',
-                time: time || ''
+                time: time || '',
+                hours: hours || 0
             }
         });
     } catch (err) {
@@ -168,7 +169,7 @@ router.post('/activities', (req, res) => {
  */
 router.put('/activities/:id', (req, res) => {
     try {
-        const { name, categoryId, type, time } = req.body;
+        const { name, categoryId, type, time, hours } = req.body;
         const { id } = req.params;
 
         const existing = db.prepare(
@@ -195,12 +196,13 @@ router.put('/activities/:id', (req, res) => {
       SET name = COALESCE(?, name), 
           category_id = COALESCE(?, category_id), 
           type = COALESCE(?, type), 
-          time = COALESCE(?, time) 
+          time = COALESCE(?, time),
+          hours = COALESCE(?, hours)
       WHERE id = ? AND user_id = ?
-    `).run(name, categoryId, type, time, id, req.user.id);
+    `).run(name, categoryId, type, time, hours, id, req.user.id);
 
         const updated = db.prepare(
-            'SELECT id, category_id as categoryId, name, type, time FROM activities WHERE id = ?'
+            'SELECT id, category_id as categoryId, name, type, time, hours FROM activities WHERE id = ?'
         ).get(id);
 
         res.json({ activity: updated });

@@ -72,3 +72,67 @@ export const getRangeDates = (rangeType) => {
 
     return [];
 };
+
+/**
+ * Convert time string (HH:MM) to minutes from 8am start
+ * Times from 08:00 to 23:59 are 0-959 minutes
+ * Times from 00:00 to 07:59 are 960-1439 minutes (next day)
+ * @param {string} time - Time in HH:MM format
+ * @returns {number} Minutes from 8am (0-1439)
+ */
+export const timeToMinutesFrom8am = (time) => {
+    if (!time) return 9999; // No time = end of list
+    const [hours, minutes] = time.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes;
+    const eightAM = 8 * 60; // 480 minutes
+
+    if (totalMinutes >= eightAM) {
+        return totalMinutes - eightAM; // 8am = 0, 9am = 60, etc.
+    } else {
+        return totalMinutes + (24 * 60 - eightAM); // 12am = 960, 7am = 1380
+    }
+};
+
+/**
+ * Sort activities by their scheduled time (8am to 8am next day)
+ * Time-bound activities are sorted first, then free activities
+ * @param {Array} activities - Array of activity objects
+ * @returns {Array} Sorted activities
+ */
+export const sortActivitiesByTime = (activities) => {
+    return [...activities].sort((a, b) => {
+        const aTime = a.type === 'time-bound' && a.time ? timeToMinutesFrom8am(a.time) : 9999;
+        const bTime = b.type === 'time-bound' && b.time ? timeToMinutesFrom8am(b.time) : 9999;
+
+        if (aTime !== bTime) return aTime - bTime;
+
+        // If same time or both free, sort by name
+        return a.name.localeCompare(b.name);
+    });
+};
+
+/**
+ * Group activities by time period for display
+ * @param {Array} activities - Sorted activities
+ * @returns {Array} Array of time period groups
+ */
+export const groupActivitiesByTimePeriod = (activities) => {
+    const periods = [
+        { id: 'morning', label: 'Morning (8am - 12pm)', start: 0, end: 240 },
+        { id: 'afternoon', label: 'Afternoon (12pm - 5pm)', start: 240, end: 540 },
+        { id: 'evening', label: 'Evening (5pm - 9pm)', start: 540, end: 780 },
+        { id: 'night', label: 'Night (9pm - 12am)', start: 780, end: 960 },
+        { id: 'late-night', label: 'Late Night (12am - 8am)', start: 960, end: 1440 },
+        { id: 'anytime', label: 'Anytime', start: 9999, end: 9999 },
+    ];
+
+    return periods.map(period => ({
+        ...period,
+        activities: activities.filter(act => {
+            const time = act.type === 'time-bound' && act.time ? timeToMinutesFrom8am(act.time) : 9999;
+            if (period.id === 'anytime') return time === 9999;
+            return time >= period.start && time < period.end;
+        })
+    })).filter(group => group.activities.length > 0);
+};
+

@@ -40,6 +40,7 @@ db.exec(`
     name TEXT NOT NULL,
     type TEXT DEFAULT 'free',
     time TEXT,
+    hours REAL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
@@ -57,6 +58,14 @@ db.exec(`
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
   );
 `);
+
+// Migration: Add hours column if it doesn't exist (for existing databases)
+try {
+  db.exec(`ALTER TABLE activities ADD COLUMN hours REAL DEFAULT 0`);
+  console.log('Migration: Added hours column to activities');
+} catch (e) {
+  // Column already exists, ignore
+}
 
 console.log('Database initialized successfully');
 
